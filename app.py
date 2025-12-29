@@ -4,7 +4,6 @@ import numpy as np
 import joblib
 from pathlib import Path
 import altair as alt
-from PIL import Image
 
 # --------------------------------------------------
 # PAGE CONFIG
@@ -36,6 +35,7 @@ st.markdown(
     .card-value {
         font-size: 1.4rem;
         font-weight: 600;
+        color: #111827;
     }
     .risk-high { color: #b91c1c; }
     .risk-low { color: #047857; }
@@ -54,7 +54,7 @@ def load_artifacts():
     model = joblib.load(BASE_DIR / "rf_kidney_disease_model.pkl")
     encoder = joblib.load(BASE_DIR / "target_label_encoder.pkl")
     scaler = joblib.load(BASE_DIR / "feature_scaler.pkl")
-    feature_columns = joblib.load(BASE_DIR / "feature_columns.pkl")
+    feature_columns = joblib.load(BASE_DIR / "feature_columns.pkl")  # 28 features
     return model, encoder, scaler, feature_columns
 
 model, target_encoder, scaler, feature_columns = load_artifacts()
@@ -62,31 +62,30 @@ model, target_encoder, scaler, feature_columns = load_artifacts()
 # --------------------------------------------------
 # ENCODING FUNCTIONS
 # --------------------------------------------------
-def yes_no(v): return 1 if v == "Yes" else 0
-def good_poor(v): return 1 if v == "Poor" else 0
-def encode_smoking(v): return {"Never": 0, "Former": 1, "Current": 2}[v]
-def encode_activity(v): return {"Low": 0, "Moderate": 1, "High": 2}[v]
-def encode_sediment(v): return {"Normal": 0, "Abnormal": 1}[v]
+def yes_no(val):
+    return 1 if val == "Yes" else 0
+
+def good_poor(val):
+    return 1 if val == "Poor" else 0
+
+def encode_smoking(val):
+    return {"Never": 0, "Former": 1, "Current": 2}[val]
+
+def encode_activity(val):
+    return {"Low": 0, "Moderate": 1, "High": 2}[val]
+
+def encode_sediment(val):
+    return {"Normal": 0, "Abnormal": 1}[val]
 
 # --------------------------------------------------
-# HEADER
+# APP HEADER
 # --------------------------------------------------
-st.title("Kidney Disease Risk Prediction")
-
-st.caption(
-    "A machine learning–based clinical decision support system designed to assist "
-    "healthcare professionals in early detection and risk assessment of chronic kidney disease "
-    "using patient clinical, biochemical, and lifestyle indicators."
+st.title("Kidney Disease Risk Prediction 🩺")
+st.markdown(
+    "This tool uses **Machine Learning** to assess the risk of Chronic Kidney Disease based on clinical parameters. "
+    "Provide accurate patient data to get a reliable risk prediction."
 )
-
-# --------------------------------------------------
-# KIDNEY IMAGE
-# --------------------------------------------------
-try:
-    img = Image.open(BASE_DIR / "kidney.png")
-    st.image(img, caption="Human Kidney Anatomy", use_container_width=True)
-except:
-    pass
+st.image("kidney_image.png", width=300, height=300)  
 
 # --------------------------------------------------
 # INPUT FORM
@@ -96,123 +95,116 @@ input_data = {}
 with st.form("patient_form"):
     st.subheader("Patient Clinical Information")
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        input_data["Age of the patient"] = st.number_input("Age", 0, 120)
-        input_data["Blood pressure (mm/Hg)"] = st.number_input("Blood Pressure")
-    with c2:
-        input_data["Specific gravity of urine"] = st.number_input("Specific Gravity")
-        input_data["Albumin in urine"] = st.number_input("Albumin")
-    with c3:
-        input_data["Sugar in urine"] = st.number_input("Sugar")
-        input_data["Random blood glucose level (mg/dl)"] = st.number_input("Random Blood Glucose")
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        input_data["Blood urea (mg/dl)"] = st.number_input("Blood Urea")
-        input_data["Serum creatinine (mg/dl)"] = st.number_input("Serum Creatinine")
-    with c2:
-        input_data["Sodium level (mEq/L)"] = st.number_input("Sodium")
-        input_data["Potassium level (mEq/L)"] = st.number_input("Potassium")
-    with c3:
-        input_data["Hemoglobin level (gms)"] = st.number_input("Hemoglobin")
-        input_data["Packed cell volume (%)"] = st.number_input("Packed Cell Volume")
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        input_data["White blood cell count (cells/cumm)"] = st.number_input("WBC Count")
-    with c2:
-        input_data["Red blood cell count (millions/cumm)"] = st.number_input("RBC Count")
-    with c3:
-        input_data["Estimated Glomerular Filtration Rate (eGFR)"] = st.number_input("eGFR")
-
-    st.subheader("Medical History")
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        input_data["Hypertension (yes/no)"] = yes_no(st.selectbox("Hypertension", ["No", "Yes"]))
-        input_data["Diabetes mellitus (yes/no)"] = yes_no(st.selectbox("Diabetes", ["No", "Yes"]))
-    with c2:
-        input_data["Coronary artery disease (yes/no)"] = yes_no(st.selectbox("CAD", ["No", "Yes"]))
-        input_data["Anemia (yes/no)"] = yes_no(st.selectbox("Anemia", ["No", "Yes"]))
-    with c3:
-        input_data["Smoking status"] = encode_smoking(st.selectbox("Smoking", ["Never", "Former", "Current"]))
-        input_data["Physical activity level"] = encode_activity(st.selectbox("Activity", ["Low", "Moderate", "High"]))
-
-    st.subheader("Inflammatory Markers")
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        input_data["Cystatin C level"] = st.number_input("Cystatin C")
-    with c2:
-        input_data["C-reactive protein (CRP) level"] = st.number_input("CRP")
-    with c3:
-        input_data["Interleukin-6 (IL-6) level"] = st.number_input("IL-6")
-
+    # Arrange inputs in 3 columns
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        input_data["Age"] = st.number_input("Age (years)", 0, 120)
+        input_data["Blood pressure"] = st.number_input("Blood Pressure (mm/Hg)")
+        input_data["Specific gravity"] = st.number_input("Specific Gravity")
+        input_data["Albumin"] = st.number_input("Albumin")
+    
+    with col2:
+        input_data["Sugar"] = st.number_input("Sugar")
+        input_data["Blood glucose random"] = st.number_input("Random Blood Glucose")
+        input_data["Blood urea"] = st.number_input("Blood Urea")
+        input_data["Serum creatinine"] = st.number_input("Serum Creatinine")
+    
+    with col3:
+        input_data["Sodium"] = st.number_input("Sodium")
+        input_data["Potassium"] = st.number_input("Potassium")
+        input_data["Hemoglobin"] = st.number_input("Hemoglobin")
+        input_data["Packed cell volume"] = st.number_input("Packed Cell Volume")
+    
+    st.subheader("Medical History & Lifestyle")
+    col4, col5, col6 = st.columns(3)
+    
+    with col4:
+        input_data["Hypertension"] = yes_no(st.selectbox("Hypertension", ["No", "Yes"]))
+        input_data["Diabetes mellitus"] = yes_no(st.selectbox("Diabetes", ["No", "Yes"]))
+        input_data["Coronary artery disease"] = yes_no(st.selectbox("CAD", ["No", "Yes"]))
+    
+    with col5:
+        input_data["Pedal edema"] = yes_no(st.selectbox("Pedal Edema", ["No", "Yes"]))
+        input_data["Anemia"] = yes_no(st.selectbox("Anemia", ["No", "Yes"]))
+        input_data["Family history of CKD"] = yes_no(st.selectbox("Family History of CKD", ["No", "Yes"]))
+    
+    with col6:
+        input_data["Appetite"] = good_poor(st.selectbox("Appetite", ["Good", "Poor"]))
+        input_data["Smoking status"] = encode_smoking(st.selectbox("Smoking Status", ["Never", "Former", "Current"]))
+        input_data["Physical activity"] = encode_activity(st.selectbox("Physical Activity", ["Low", "Moderate", "High"]))
+    
+    input_data["Urinary sediment"] = encode_sediment(st.selectbox("Urinary Sediment", ["Normal", "Abnormal"]))
+    
     submit = st.form_submit_button("Predict Risk")
 
 # --------------------------------------------------
-# PREDICTION
+# PREDICTION PIPELINE
 # --------------------------------------------------
 if submit:
-    # Create DataFrame from user input
-    df = pd.DataFrame([input_data])
-
-    # Reindex to match feature columns of the trained model
-    df = df.reindex(columns=feature_columns, fill_value=0)
-
-    # Convert to numpy array before scaling
     try:
+        df = pd.DataFrame([input_data])
+        df = df.reindex(columns=feature_columns, fill_value=0)  # Match trained features
         df_scaled = scaler.transform(df.values)
-        df = pd.DataFrame(df_scaled, columns=feature_columns)
-    except ValueError as e:
-        st.error(f"Error in data preprocessing: {e}")
-        st.stop()
-
-
-    # --------------------------------------------------
-    # RESULT DASHBOARD
-    # --------------------------------------------------
-    st.subheader("Prediction Outcome")
-
-    risk_class = "risk-high" if top_category.lower() in ["ckd", "yes", "positive"] else "risk-low"
-    conf_label = "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low"
-
-    c1, c2, c3 = st.columns(3)
-    c1.markdown(f"<div class='card'><div class='card-title'>Clinical Assessment</div><div class='card-value {risk_class}'>{top_category}</div></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div class='card'><div class='card-title'>Risk Probability</div><div class='card-value'>{top_prob}%</div></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='card'><div class='card-title'>Model Confidence</div><div class='card-value'>{conf_label}</div></div>", unsafe_allow_html=True)
-
-    # --------------------------------------------------
-    # PROBABILITY TABLE
-    # --------------------------------------------------
-    prob_df = pd.DataFrame({
-        "Risk Category": target_encoder.classes_,
-        "Probability (%)": np.round(probs, 2)
-    }).sort_values("Probability (%)", ascending=False)
-
-    st.subheader("📊 Prediction Probabilities")
-    st.dataframe(prob_df, use_container_width=True)
-
-    # --------------------------------------------------
-    # VISUALIZATION (VERTICAL, NORMAL PIE)
-    # --------------------------------------------------
-    st.subheader("📈 Risk Probability Distribution")
-
-    pie_chart = alt.Chart(prob_df).mark_arc().encode(
-        theta="Probability (%):Q",
-        color="Risk Category:N",
-        tooltip=["Risk Category", "Probability (%)"]
-    ).properties(width=350, height=350)
-
-    st.altair_chart(pie_chart, use_container_width=False)
-
-    bar_chart = alt.Chart(prob_df).mark_bar().encode(
-        x="Risk Category:N",
-        y=alt.Y("Probability (%):Q", scale=alt.Scale(domain=[0, 100])),
-        color=alt.Color("Risk Category:N", legend=None),
-        tooltip=["Risk Category", "Probability (%)"]
-    ).properties(width=700, height=350)
-
-    st.altair_chart(bar_chart, use_container_width=False)
-
+        df_scaled = pd.DataFrame(df_scaled, columns=feature_columns)
+        
+        with st.spinner("Analyzing patient data..."):
+            pred = model.predict(df_scaled)[0]
+            label = target_encoder.inverse_transform([pred])[0]
+        
+        # --------------------------------------------------
+        # RESULT DASHBOARD
+        # --------------------------------------------------
+        st.subheader("Prediction Outcome 🩺")
+        
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(df_scaled)[0] * 100
+            top_idx = np.argmax(probs)
+            top_category = target_encoder.classes_[top_idx]
+            top_prob = round(probs[top_idx], 2)
+        else:
+            top_category = label
+            top_prob = 0
+        
+        risk_class = "risk-high" if top_category.lower() in ["ckd", "yes", "positive"] else "risk-low"
+        
+        c1, c2, c3 = st.columns(3)
+        c1.markdown(f"<div class='card'><div class='card-title'>Clinical Assessment</div><div class='card-value {risk_class}'>{top_category}</div></div>", unsafe_allow_html=True)
+        c2.markdown(f"<div class='card'><div class='card-title'>Risk Probability</div><div class='card-value'>{top_prob}%</div></div>", unsafe_allow_html=True)
+        conf_label = "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low"
+        c3.markdown(f"<div class='card'><div class='card-title'>Model Confidence</div><div class='card-value'>{conf_label}</div></div>", unsafe_allow_html=True)
+        
+        # --------------------------------------------------
+        # PREDICTION PROBABILITIES
+        # --------------------------------------------------
+        if hasattr(model, "predict_proba"):
+            prob_df = pd.DataFrame({
+                "Risk Category": target_encoder.classes_,
+                "Probability (%)": np.round(probs, 2),
+            }).sort_values("Probability (%)", ascending=False)
+            
+            st.subheader("📊 Prediction Probabilities")
+            st.dataframe(prob_df, use_container_width=True)
+            
+            st.subheader("📈 Risk Probability Charts")
+            col_left, col_right = st.columns(2)
+            
+            with col_left:
+                pie_chart = alt.Chart(prob_df).mark_arc().encode(
+                    theta="Probability (%):Q",
+                    color="Risk Category:N",
+                    tooltip=["Risk Category", "Probability (%)"]
+                ).properties(width=300, height=300)
+                st.altair_chart(pie_chart, use_container_width=False)
+            
+            with col_right:
+                bar_chart = alt.Chart(prob_df).mark_bar().encode(
+                    x=alt.X("Probability (%):Q", title="Probability (%)"),
+                    y=alt.Y("Risk Category:N", title="Risk Category"),
+                    color="Risk Category:N",
+                    tooltip=["Risk Category", "Probability (%)"]
+                ).properties(width=400, height=350)
+                st.altair_chart(bar_chart, use_container_width=False)
+            
+    except Exception as e:
+        st.error(f"Error in prediction: {e}")
