@@ -72,7 +72,21 @@ def encode_sediment(val): return {"Normal": 0, "Abnormal": 1}[val]
 # APP HEADER
 # --------------------------------------------------
 st.title("Kidney Disease Risk Prediction")
-st.caption("Machine Learning–Based Clinical Decision Support System")
+
+st.caption(
+    "An intelligent clinical decision support system that leverages machine learning "
+    "to assist in the early detection and risk assessment of chronic kidney disease "
+    "based on patient clinical, laboratory, and lifestyle data."
+)
+
+# --------------------------------------------------
+# KIDNEY IMAGE (ATTRACTIVE UI)
+# --------------------------------------------------
+st.image(
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Kidney_diagram_en.svg/512px-Kidney_diagram_en.svg.png",
+    caption="Human Kidney Anatomy",
+    width=300,
+)
 
 # --------------------------------------------------
 # INPUT FORM
@@ -143,79 +157,16 @@ if submit:
     df = pd.DataFrame([input_data])
     df = df.reindex(columns=feature_columns, fill_value=0)
 
-    try:
-        df = pd.DataFrame(scaler.transform(df), columns=feature_columns)
-    except Exception:
-        pass
+    df = pd.DataFrame(scaler.transform(df), columns=feature_columns)
 
-    with st.spinner("Analyzing patient data..."):
-        pred = model.predict(df)[0]
-        label = target_encoder.inverse_transform([pred])[0]
-
-    st.subheader("Prediction Outcome")
-
+    pred = model.predict(df)[0]
     probs = model.predict_proba(df)[0] * 100
+
     top_idx = np.argmax(probs)
     top_category = target_encoder.classes_[top_idx]
     top_prob = round(probs[top_idx], 2)
 
-    risk_class = "risk-high" if top_category.lower() in ["ckd", "yes", "positive"] else "risk-low"
+    st.subheader("Prediction Outcome")
+    st.success(f"Predicted Condition: **{top_category}**")
+    st.info(f"Risk Probability: **{top_prob}%**")
 
-    c1, c2, c3 = st.columns(3)
-
-    c1.markdown(
-        f"<div class='card'><div class='card-title'>Clinical Assessment</div>"
-        f"<div class='card-value {risk_class}'>{top_category}</div></div>",
-        unsafe_allow_html=True,
-    )
-
-    c2.markdown(
-        f"<div class='card'><div class='card-title'>Risk Probability</div>"
-        f"<div class='card-value'>{top_prob}%</div></div>",
-        unsafe_allow_html=True,
-    )
-
-    conf_label = "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low"
-
-    c3.markdown(
-        f"<div class='card'><div class='card-title'>Model Confidence</div>"
-        f"<div class='card-value'>{conf_label}</div></div>",
-        unsafe_allow_html=True,
-    )
-
-    # --------------------------------------------------
-    # VISUALIZATION (VERTICAL + NORMAL PIE)
-    # --------------------------------------------------
-    prob_df = pd.DataFrame({
-        "Risk Category": target_encoder.classes_,
-        "Probability (%)": np.round(probs, 2),
-    }).sort_values("Probability (%)", ascending=False)
-
-    st.subheader("📈 Risk Probability Distribution")
-
-    pie_chart = (
-        alt.Chart(prob_df)
-        .mark_arc()
-        .encode(
-            theta="Probability (%):Q",
-            color="Risk Category:N",
-            tooltip=["Risk Category", "Probability (%)"],
-        )
-        .properties(width=350, height=350)
-    )
-
-    st.altair_chart(pie_chart, use_container_width=False)
-
-    bar_chart = (
-        alt.Chart(prob_df)
-        .mark_bar()
-        .encode(
-            x=alt.X("Risk Category:N", labelAngle=-30),
-            y=alt.Y("Probability (%):Q", scale=alt.Scale(domain=[0, 100])),
-            color=alt.Color("Risk Category:N", legend=None),
-            tooltip=["Risk Category", "Probability (%)"],
-        )
-        .properties(width=700, height=350)
-    )
-
-    st.altair_chart(bar_chart, use_container_width=False)
