@@ -4,7 +4,6 @@ import numpy as np
 import joblib
 from pathlib import Path
 import altair as alt
-from PIL import Image
 
 # --------------------------------------------------
 # PAGE CONFIG
@@ -86,19 +85,10 @@ def encode_sediment(val):
 # --------------------------------------------------
 st.title("Kidney Disease Risk Prediction 🩺")
 st.markdown(
-    "This tool uses **Machine Learning** to assess the risk of Chronic Kidney Disease "
-    "based on clinical parameters. Provide accurate patient data to get a reliable prediction."
+    "A machine-learning–based tool for early assessment of chronic kidney disease risk using clinical and lifestyle data. "
+    "Provide accurate patient data to get a reliable prediction."
 )
 
-# --------------------------------------------------
-# SAFE IMAGE LOADING
-# --------------------------------------------------
-IMAGE_PATH = BASE_DIR / "kidney.png"
-if IMAGE_PATH.exists():
-    image = Image.open(IMAGE_PATH)
-    st.image(image, width=300)
-else:
-    st.warning("Kidney image not found. Please ensure `Kidney.png` is in the app directory.")
 
 # --------------------------------------------------
 # INPUT FORM
@@ -273,6 +263,7 @@ if submit:
 
     else:
         st.info("This model does not support probability predictions.")
+
 
 
 
