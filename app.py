@@ -12,7 +12,7 @@ from PIL import Image
 st.set_page_config(
     page_title="Kidney Disease Risk Prediction",
     page_icon="🩺",
-    layout="centered"
+    layout="wide"
 )
 
 # --------------------------------------------------
@@ -93,7 +93,7 @@ st.markdown(
 # --------------------------------------------------
 # SAFE IMAGE LOADING
 # --------------------------------------------------
-IMAGE_PATH = BASE_DIR / "Kidney.png"
+IMAGE_PATH = BASE_DIR / "kidney.png"
 if IMAGE_PATH.exists():
     image = Image.open(IMAGE_PATH)
     st.image(image, width=300)
@@ -246,7 +246,7 @@ if submit:
             .properties(width=400, height=400)
         )
 
-        st.altair_chart(pie_chart, use_container_width=False)
+        st.altair_chart(pie_chart, use_container_width=True)
 
         # -------- BAR CHART (VERTICAL, BELOW PIE) --------
         bar_chart = (
@@ -269,9 +269,10 @@ if submit:
             .properties(width=700, height=350)
         )
 
-        st.altair_chart(bar_chart, use_container_width=False)
+        st.altair_chart(bar_chart, use_container_width=True)
 
     else:
         st.info("This model does not support probability predictions.")
+
 
 
