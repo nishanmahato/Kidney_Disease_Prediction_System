@@ -85,7 +85,7 @@ st.markdown(
     "This tool uses **Machine Learning** to assess the risk of Chronic Kidney Disease based on clinical parameters. "
     "Provide accurate patient data to get a reliable risk prediction."
 )
-st.image("kidney_image.png", width=300, height=300)  
+st.image("kidney_image.png", width=300)  
 
 # --------------------------------------------------
 # INPUT FORM
@@ -208,3 +208,4 @@ if submit:
             
     except Exception as e:
         st.error(f"Error in prediction: {e}")
+
