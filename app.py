@@ -17,9 +17,16 @@ st.set_page_config(
 # --------------------------------------------------
 # LOAD MODEL & PREPROCESSING OBJECTS
 # --------------------------------------------------
-best_model = joblib.load("model.pkl")
-scaler = joblib.load("scaler.pkl")
-target_encoder = joblib.load("target_encoder.pkl")
+BASE_DIR = Path(__file__).resolve().parent
+
+
+@st.cache_resource
+def load_artifacts():
+    model = joblib.load(BASE_DIR / "rf_kidney_disease_model.pkl")
+    encoder = joblib.load(BASE_DIR / "target_label_encoder.pkl")
+    scaler = joblib.load(BASE_DIR / "feature_scaler.pkl")
+    feature_columns = joblib.load(BASE_DIR / "feature_columns.pkl")
+    return model, encoder, scaler, feature_columns
 
 # Feature columns used during training (MUST match exactly)
 feature_columns = [
@@ -159,3 +166,4 @@ if submitted:
         "⚠️ **Disclaimer:** This system is intended for educational and decision-support purposes only. "
         "It does not replace professional medical diagnosis or clinical judgment."
     )
+
