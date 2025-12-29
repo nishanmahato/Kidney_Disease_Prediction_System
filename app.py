@@ -155,21 +155,20 @@ with st.form("patient_form"):
 # PREDICTION
 # --------------------------------------------------
 if submit:
+    # Create DataFrame from user input
     df = pd.DataFrame([input_data])
+
+    # Reindex to match feature columns of the trained model
     df = df.reindex(columns=feature_columns, fill_value=0)
 
-    df_scaled = pd.DataFrame(
-        scaler.transform(df.values),
-        columns=feature_columns
-    )
+    # Convert to numpy array before scaling
+    try:
+        df_scaled = scaler.transform(df.values)
+        df = pd.DataFrame(df_scaled, columns=feature_columns)
+    except ValueError as e:
+        st.error(f"Error in data preprocessing: {e}")
+        st.stop()
 
-    pred = model.predict(df_scaled)[0]
-    label = target_encoder.inverse_transform([pred])[0]
-
-    probs = model.predict_proba(df_scaled)[0] * 100
-    top_idx = np.argmax(probs)
-    top_category = target_encoder.classes_[top_idx]
-    top_prob = round(probs[top_idx], 2)
 
     # --------------------------------------------------
     # RESULT DASHBOARD
@@ -216,3 +215,4 @@ if submit:
     ).properties(width=700, height=350)
 
     st.altair_chart(bar_chart, use_container_width=False)
+
