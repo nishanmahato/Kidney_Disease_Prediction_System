@@ -17,33 +17,38 @@ This project provides an interactive interface for early assessment of CKD risk.
 5.	Results displayed with charts and summary cards
 ##### Input Parameters
 ###### Clinical Measurements:
-Age, 
-Blood Pressure, 
-Specific Gravity, 
-Albumin, 
-Sugar, 
-Random Blood Glucose,
-Blood Urea, 
-Serum Creatinine, 
-Sodium, Potassium, 
-Hemoglobin, 
-Packed Cell Volume
-
+•	Age
+•	Blood Pressure 
+•	Specific Gravity
+•	Albumin
+•	Sugar 
+•	Random Blood Glucose
+•	Blood Urea 
+•	Serum Creatinine
+•	Sodium, Potassium
+•	Hemoglobin 
+•	Packed Cell Volume
 ###### Medical History & Lifestyle:
-Hypertension, 
-Diabetes Mellitus, 
-Coronary Artery Disease, 
-Pedal Edema,
-Anemia, 
-Family History of CKD, 
-Appetite, 
-Smoking Status,
-Physical Activity, 
-Urinary Sediment
+•	Hypertension 
+•	Diabetes Mellitus
+•	Coronary Artery Disease
+•	Pedal Edema
+•	Anemia
+•	Family History of CKD
+•	Appetite
+•	Smoking Status
+•	Physical Activity
+•	Urinary Sediment
 
 ##### Tech Stack
-Python, Streamlit, Scikit-learn, Pandas, NumPy, Altair, Joblib
+•	Python
+•	Streamlit
+•	Scikit-learn
+•	Pandas
+•	NumPy 
+•	Altair
+•	Joblib
 
 
 
-<img width="432" height="636" alt="image" src="https://github.com/user-attachments/assets/2d716e41-8c1b-456d-9679-bcb6a93b495f" />
+<img width="432" height="639" alt="image" src="https://github.com/user-attachments/assets/1289d568-35d5-40c6-9a7c-e446223012ea" />
