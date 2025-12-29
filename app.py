@@ -98,7 +98,7 @@ if IMAGE_PATH.exists():
     image = Image.open(IMAGE_PATH)
     st.image(image, width=300)
 else:
-    st.warning("Kidney image not found. Please ensure `kidney_image.png` is in the app directory.")
+    st.warning("Kidney image not found. Please ensure `kidney.png` is in the app directory.")
 
 # --------------------------------------------------
 # INPUT FORM
@@ -279,3 +279,4 @@ bar_chart = (
 )
 
 st.altair_chart(bar_chart, use_container_width=False)
+
