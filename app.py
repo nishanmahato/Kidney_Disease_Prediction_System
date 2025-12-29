@@ -93,12 +93,12 @@ st.markdown(
 # --------------------------------------------------
 # SAFE IMAGE LOADING
 # --------------------------------------------------
-IMAGE_PATH = BASE_DIR / "kidney_image.png"
+IMAGE_PATH = BASE_DIR / "Kidney.png"
 if IMAGE_PATH.exists():
     image = Image.open(IMAGE_PATH)
     st.image(image, width=300)
 else:
-    st.warning("Kidney image not found. Please ensure `kidney.png` is in the app directory.")
+    st.warning("Kidney image not found. Please ensure `Kidney.png` is in the app directory.")
 
 # --------------------------------------------------
 # INPUT FORM
@@ -163,18 +163,21 @@ if submit:
     df = pd.DataFrame([input_data])
     df = df.reindex(columns=feature_columns, fill_value=0)
 
+    # Scale features if scaler is available
     try:
-        df = pd.DataFrame(scaler.transform(df), columns=feature_columns)
+        df = pd.DataFrame(
+            scaler.transform(df),
+            columns=feature_columns
+        )
     except Exception:
         pass
 
+    # ---------------- PREDICTION ----------------
     with st.spinner("Analyzing patient data..."):
         pred = model.predict(df)[0]
         label = target_encoder.inverse_transform([pred])[0]
 
-    # --------------------------------------------------
-    # RESULT DASHBOARD
-    # --------------------------------------------------
+    # ---------------- DASHBOARD ----------------
     st.subheader("Prediction Outcome")
 
     if hasattr(model, "predict_proba"):
@@ -215,9 +218,10 @@ if submit:
     )
 
     # --------------------------------------------------
-    # PREDICTION PROBABILITIES (AFTER DASHBOARD)
+    # PREDICTION PROBABILITIES + VISUALIZATION
     # --------------------------------------------------
     if hasattr(model, "predict_proba"):
+
         prob_df = pd.DataFrame(
             {
                 "Risk Category": target_encoder.classes_,
@@ -228,55 +232,46 @@ if submit:
         st.subheader("📊 Prediction Probabilities")
         st.dataframe(prob_df, use_container_width=True)
 
-        # --------------------------------------------------
-# VISUALIZATION
-# --------------------------------------------------
-st.subheader("📈 Risk Probability Distribution")
+        st.subheader("📈 Risk Probability Distribution")
 
-# -------- PIE CHART (NORMAL PIE, NOT DONUT) --------
-pie_chart = (
-    alt.Chart(prob_df)
-    .mark_arc()  # removed innerRadius -> normal pie
-    .encode(
-        theta=alt.Theta("Probability (%):Q"),
-        color=alt.Color("Risk Category:N"),
-        tooltip=["Risk Category", "Probability (%)"],
-    )
-    .properties(
-        width=400,
-        height=400,
-    )
-)
+        # -------- PIE CHART (NORMAL PIE) --------
+        pie_chart = (
+            alt.Chart(prob_df)
+            .mark_arc()
+            .encode(
+                theta=alt.Theta("Probability (%):Q"),
+                color=alt.Color("Risk Category:N"),
+                tooltip=["Risk Category", "Probability (%)"],
+            )
+            .properties(width=400, height=400)
+        )
 
-st.altair_chart(pie_chart, use_container_width=False)
+        st.altair_chart(pie_chart, use_container_width=False)
 
-# -------- BAR CHART (BELOW PIE) --------
-bar_chart = (
-    alt.Chart(prob_df)
-    .mark_bar()
-    .encode(
-        x=alt.X(
-            "Risk Category:N",
-            title="Risk Category",
-            sort=None,
-            axis=alt.Axis(
-                labelAngle=-30,
-                labelFontSize=12,
-            ),
-        ),
-        y=alt.Y(
-            "Probability (%):Q",
-            title="Probability (%)",
-            scale=alt.Scale(domain=[0, 100]),
-        ),
-        color=alt.Color("Risk Category:N", legend=None),
-        tooltip=["Risk Category", "Probability (%)"],
-    )
-    .properties(
-        width=700,
-        height=350,
-    )
-)
+        # -------- BAR CHART (VERTICAL, BELOW PIE) --------
+        bar_chart = (
+            alt.Chart(prob_df)
+            .mark_bar()
+            .encode(
+                x=alt.X(
+                    "Risk Category:N",
+                    title="Risk Category",
+                    axis=alt.Axis(labelAngle=-30),
+                ),
+                y=alt.Y(
+                    "Probability (%):Q",
+                    title="Probability (%)",
+                    scale=alt.Scale(domain=[0, 100]),
+                ),
+                color=alt.Color("Risk Category:N", legend=None),
+                tooltip=["Risk Category", "Probability (%)"],
+            )
+            .properties(width=700, height=350)
+        )
 
-st.altair_chart(bar_chart, use_container_width=False)
+        st.altair_chart(bar_chart, use_container_width=False)
+
+    else:
+        st.info("This model does not support probability predictions.")
+
 
