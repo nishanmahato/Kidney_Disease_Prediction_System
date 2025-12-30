@@ -154,7 +154,7 @@ if submit:
     df = pd.DataFrame([input_data])
     df = df[feature_columns]
 
-    df_scaled = scaler.transform(df)
+    df_scaled = scaler.transform(df.values)
 
     with st.spinner("Analyzing patient data..."):
         pred = model.predict(df_scaled)[0]
@@ -242,3 +242,4 @@ if submit:
 
         st.altair_chart(pie_chart, use_container_width=True)
         st.altair_chart(bar_chart, use_container_width=True)
+
