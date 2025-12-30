@@ -19,10 +19,9 @@ st.caption(
 )
 
 # --------------------------------------------------
-# BASE DIRECTORY (MUST COME BEFORE joblib.load)
+# BASE DIRECTORY
 # --------------------------------------------------
 BASE_DIR = Path(__file__).parent.resolve()
-
 
 # --------------------------------------------------
 # LOAD SAVED MODELS & OBJECTS
@@ -32,9 +31,8 @@ scaler = joblib.load(BASE_DIR / "feature_scaler.pkl")
 target_encoder = joblib.load(BASE_DIR / "target_label_encoder.pkl")
 feature_columns = joblib.load(BASE_DIR / "feature_columns.pkl")
 
-
 # --------------------------------------------------
-# CATEGORICAL MAPPINGS (MATCH TRAINING)
+# CATEGORICAL MAPPINGS
 # --------------------------------------------------
 binary_map = {"yes": 1, "no": 0}
 normal_abnormal_map = {"normal": 0, "abnormal": 1}
@@ -43,7 +41,7 @@ appetite_map = {"good": 1, "poor": 0}
 activity_map = {"low": 0, "moderate": 1, "high": 2}
 
 # --------------------------------------------------
-# CATEGORICAL COLUMN LIST
+# COLUMN TYPES
 # --------------------------------------------------
 CATEGORICAL_COLS = [
     "Red blood cells in urine",
@@ -62,7 +60,7 @@ CATEGORICAL_COLS = [
     "Urinary sediment microscopy results",
 ]
 
-NUMERIC_COLS = [col for col in feature_columns if col not in CATEGORICAL_COLS]
+NUMERIC_COLS = [c for c in feature_columns if c not in CATEGORICAL_COLS]
 
 # --------------------------------------------------
 # INPUT FORM
@@ -76,6 +74,7 @@ with st.form("patient_form"):
 
     for i, col in enumerate(feature_columns):
         with cols[i % 3]:
+
             if col in [
                 "Red blood cells in urine",
                 "Pus cells in urine",
@@ -108,15 +107,18 @@ with st.form("patient_form"):
     submit = st.form_submit_button("🔍 Predict Risk")
 
 # --------------------------------------------------
-# PREDICTION PIPELINE
+# PREDICTION & RESULTS
 # --------------------------------------------------
 if submit:
-    df = pd.DataFrame([input_data])
-    df = df.reindex(columns=feature_columns)
+    df = pd.DataFrame([input_data]).reindex(columns=feature_columns)
 
-    # Encode categorical values
     for col in df.columns:
-        if col in ["Red blood cells in urine", "Pus cells in urine", "Urinary sediment microscopy results"]:
+
+        if col in [
+            "Red blood cells in urine",
+            "Pus cells in urine",
+            "Urinary sediment microscopy results",
+        ]:
             df[col] = df[col].map(normal_abnormal_map)
 
         elif col in ["Pus cell clumps in urine", "Bacteria in urine"]:
@@ -139,7 +141,6 @@ if submit:
         elif col == "Physical activity level":
             df[col] = df[col].map(activity_map)
 
-    # Scale ONLY numeric columns
     df_scaled = df.copy()
     df_scaled[NUMERIC_COLS] = scaler.transform(df_scaled[NUMERIC_COLS])
 
@@ -148,11 +149,6 @@ if submit:
     with st.spinner("Analyzing patient data..."):
         pred = model.predict(X_final)[0]
         label = target_encoder.inverse_transform([pred])[0]
-
-    # --------------------------------------------------
-    # RESULT DASHBOARD
-    # --------------------------------------------------
-    st.subheader("📊 Prediction Outcome")
 
     if hasattr(model, "predict_proba"):
         probs = model.predict_proba(X_final)[0] * 100
@@ -163,41 +159,62 @@ if submit:
         top_category = label
         top_prob = 0
 
-    risk_class = "High Risk" if top_category.lower() in ["ckd", "yes", "positive"] else "Low Risk"
+    risk_class = (
+        "High Risk"
+        if top_category.lower() in ["ckd", "yes", "positive"]
+        else "Low Risk"
+    )
+
+    st.subheader("📊 Prediction Outcome")
+
+    if risk_class == "High Risk":
+        st.error("⚠️ High Risk of Chronic Kidney Disease detected")
+    else:
+        st.success("✅ Low Risk of Chronic Kidney Disease detected")
 
     c1, c2, c3 = st.columns(3)
-
     c1.metric("Clinical Assessment", top_category)
     c2.metric("Risk Probability", f"{top_prob}%")
-
-    conf_label = "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low"
-    c3.metric("Model Confidence", conf_label)
+    c3.metric(
+        "Model Confidence",
+        "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low",
+    )
 
     # --------------------------------------------------
-    # PROBABILITY TABLE & CHARTS
+    # VISUALIZATION
     # --------------------------------------------------
-    if hasattr(model, "predict_proba"):
-        prob_df = pd.DataFrame({
-            "Risk Category": target_encoder.classes_,
-            "Probability (%)": np.round(probs, 2),
-        }).sort_values("Probability (%)", ascending=False)
+    prob_df = pd.DataFrame({
+        "Risk Category": target_encoder.classes_,
+        "Probability (%)": np.round(probs, 2),
+    }).sort_values("Probability (%)", ascending=False)
 
-        st.subheader("📈 Risk Probability Distribution")
+    st.subheader("📈 Risk Probability Distribution")
 
-        st.dataframe(prob_df, use_container_width=True)
-
-        bar_chart = (
-            alt.Chart(prob_df)
-            .mark_bar()
-            .encode(
-                x=alt.X("Risk Category:N", title="Risk Category"),
-                y=alt.Y("Probability (%):Q", scale=alt.Scale(domain=[0, 100])),
-                tooltip=["Risk Category", "Probability (%)"],
-            )
-            .properties(height=350)
+    bar_chart = (
+        alt.Chart(prob_df)
+        .mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
+        .encode(
+            x="Risk Category:N",
+            y=alt.Y("Probability (%):Q", scale=alt.Scale(domain=[0, 100])),
+            color=alt.Color("Risk Category:N", scale=alt.Scale(scheme="set2")),
+            tooltip=["Risk Category", "Probability (%)"],
         )
+        .properties(height=350)
+    )
 
+    pie_chart = (
+        alt.Chart(prob_df)
+        .mark_arc(innerRadius=40, stroke="white")
+        .encode(
+            theta="Probability (%):Q",
+            color=alt.Color("Risk Category:N", scale=alt.Scale(scheme="set2")),
+            tooltip=["Risk Category", "Probability (%)"],
+        )
+        .properties(height=350)
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
         st.altair_chart(bar_chart, use_container_width=True)
-
-
-
+    with col2:
+        st.altair_chart(pie_chart, use_container_width=True)
