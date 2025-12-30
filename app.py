@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -5,50 +8,23 @@ import joblib
 from pathlib import Path
 import altair as alt
 
-# ==================================================
+# --------------------------------------------------
 # PAGE CONFIG
-# ==================================================
+# --------------------------------------------------
 st.set_page_config(
     page_title="Kidney Disease Risk Prediction",
     page_icon="🩺",
     layout="wide"
 )
 
-# ==================================================
-# GLOBAL STYLE
-# ==================================================
-st.markdown(
-    """
-    <style>
-    body { background-color: #f8fafc; }
-    .card {
-        background-color: #ffffff;
-        padding: 1rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        text-align: center;
-    }
-    .card-title {
-        font-size: 0.8rem;
-        color: #6b7280;
-    }
-    .card-value {
-        font-size: 1.4rem;
-        font-weight: 600;
-        color: #111827;
-    }
-    .risk-high { color: #b91c1c; }
-    .risk-low { color: #047857; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# ==================================================
-# LOAD MODEL ARTIFACTS
-# ==================================================
+# --------------------------------------------------
+# BASE DIRECTORY
+# --------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
 
+# --------------------------------------------------
+# LOAD ARTIFACTS
+# --------------------------------------------------
 @st.cache_resource
 def load_artifacts():
     model = joblib.load(BASE_DIR / "rf_kidney_disease_model.pkl")
@@ -59,187 +35,166 @@ def load_artifacts():
 
 model, target_encoder, scaler, feature_columns = load_artifacts()
 
-# ==================================================
-# ENCODING FUNCTIONS (DATASET-ALIGNED)
-# ==================================================
-def yes_no(val): return 1 if val == "yes" else 0
-def normal_abnormal(val): return 1 if val == "abnormal" else 0
-def present_absent(val): return 1 if val == "present" else 0
-def good_poor(val): return 1 if val == "poor" else 0
-def physical_activity(val):
-    return {"low": 0, "moderate": 1, "high": 2}[val]
+# --------------------------------------------------
+# ENCODING MAPS (MATCH TRAINING)
+# --------------------------------------------------
+binary_map = {
+    "yes": 1, "no": 0,
+    "present": 1, "not present": 0,
+    "abnormal": 1, "normal": 0,
+    "poor": 1, "good": 0
+}
 
-# ==================================================
+activity_map = {
+    "low": 0,
+    "moderate": 1,
+    "high": 2
+}
+
+# --------------------------------------------------
 # APP HEADER
-# ==================================================
+# --------------------------------------------------
 st.title("Kidney Disease Risk Prediction 🩺")
 st.markdown(
-    "A machine-learning–based clinical decision support system for early "
-    "assessment of chronic kidney disease using laboratory, clinical, and "
-    "lifestyle parameters."
+    "Machine-learning–based system for early assessment of chronic kidney disease using clinical and lifestyle data."
 )
 
-# ==================================================
-# INPUT FORM (AUTO-GENERATED FROM MODEL FEATURES)
-# ==================================================
+# --------------------------------------------------
+# INPUT FORM
+# --------------------------------------------------
 input_data = {}
 
 with st.form("patient_form"):
-    st.subheader("Patient Clinical & Laboratory Data")
+    st.subheader("Patient Information")
 
-    cols = st.columns(3)
-    col_idx = 0
+    col1, col2, col3 = st.columns(3)
 
-    for feature in feature_columns:
+    with col1:
+        input_data["Age of the patient"] = st.number_input("Age (years)", 0, 120)
+        input_data["Blood pressure (mm/Hg)"] = st.number_input("Blood Pressure")
+        input_data["Specific gravity of urine"] = st.number_input("Specific Gravity")
+        input_data["Albumin in urine"] = st.number_input("Albumin")
+        input_data["Sugar in urine"] = st.number_input("Sugar")
 
-        if feature == "Target":
-            continue
+    with col2:
+        input_data["Random blood glucose level (mg/dl)"] = st.number_input("Random Blood Glucose")
+        input_data["Blood urea (mg/dl)"] = st.number_input("Blood Urea")
+        input_data["Serum creatinine (mg/dl)"] = st.number_input("Serum Creatinine")
+        input_data["Sodium level (mEq/L)"] = st.number_input("Sodium")
+        input_data["Potassium level (mEq/L)"] = st.number_input("Potassium")
 
-        with cols[col_idx]:
+    with col3:
+        input_data["Hemoglobin level (gms)"] = st.number_input("Hemoglobin")
+        input_data["Packed cell volume (%)"] = st.number_input("Packed Cell Volume")
+        input_data["White blood cell count (cells/cumm)"] = st.number_input("WBC Count")
+        input_data["Red blood cell count (millions/cumm)"] = st.number_input("RBC Count")
+        input_data["Estimated Glomerular Filtration Rate (eGFR)"] = st.number_input("eGFR")
 
-            if feature in [
-                'Red blood cells in urine',
-                'Pus cells in urine',
-                'Urinary sediment microscopy results'
-            ]:
-                input_data[feature] = normal_abnormal(
-                    st.selectbox(feature, ["normal", "abnormal"])
-                )
+    st.subheader("Clinical Conditions")
 
-            elif feature in [
-                'Pus cell clumps in urine',
-                'Bacteria in urine'
-            ]:
-                input_data[feature] = present_absent(
-                    st.selectbox(feature, ["not present", "present"])
-                )
+    col4, col5, col6 = st.columns(3)
 
-            elif feature in [
-                'Hypertension (yes/no)',
-                'Diabetes mellitus (yes/no)',
-                'Coronary artery disease (yes/no)',
-                'Pedal edema (yes/no)',
-                'Anemia (yes/no)',
-                'Family history of chronic kidney disease',
-                'Smoking status'
-            ]:
-                input_data[feature] = yes_no(
-                    st.selectbox(feature, ["no", "yes"])
-                )
+    with col4:
+        input_data["Red blood cells in urine"] = binary_map[
+            st.selectbox("Red Blood Cells in Urine", ["normal", "abnormal"])
+        ]
+        input_data["Pus cells in urine"] = binary_map[
+            st.selectbox("Pus Cells in Urine", ["normal", "abnormal"])
+        ]
+        input_data["Pus cell clumps in urine"] = binary_map[
+            st.selectbox("Pus Cell Clumps", ["not present", "present"])
+        ]
 
-            elif feature == 'Appetite (good/poor)':
-                input_data[feature] = good_poor(
-                    st.selectbox(feature, ["good", "poor"])
-                )
+    with col5:
+        input_data["Bacteria in urine"] = binary_map[
+            st.selectbox("Bacteria in Urine", ["not present", "present"])
+        ]
+        input_data["Hypertension (yes/no)"] = binary_map[
+            st.selectbox("Hypertension", ["no", "yes"])
+        ]
+        input_data["Diabetes mellitus (yes/no)"] = binary_map[
+            st.selectbox("Diabetes Mellitus", ["no", "yes"])
+        ]
 
-            elif feature == 'Physical activity level':
-                input_data[feature] = physical_activity(
-                    st.selectbox(feature, ["low", "moderate", "high"])
-                )
+    with col6:
+        input_data["Coronary artery disease (yes/no)"] = binary_map[
+            st.selectbox("Coronary Artery Disease", ["no", "yes"])
+        ]
+        input_data["Appetite (good/poor)"] = binary_map[
+            st.selectbox("Appetite", ["good", "poor"])
+        ]
+        input_data["Pedal edema (yes/no)"] = binary_map[
+            st.selectbox("Pedal Edema", ["no", "yes"])
+        ]
 
-            else:
-                input_data[feature] = st.number_input(
-                    feature, value=0.0
-                )
+    st.subheader("Lifestyle & History")
 
-        col_idx = (col_idx + 1) % 3
+    col7, col8, col9 = st.columns(3)
+
+    with col7:
+        input_data["Anemia (yes/no)"] = binary_map[
+            st.selectbox("Anemia", ["no", "yes"])
+        ]
+        input_data["Family history of chronic kidney disease"] = binary_map[
+            st.selectbox("Family History of CKD", ["no", "yes"])
+        ]
+        input_data["Smoking status"] = binary_map[
+            st.selectbox("Smoking Status", ["no", "yes"])
+        ]
+
+    with col8:
+        input_data["Physical activity level"] = activity_map[
+            st.selectbox("Physical Activity", ["low", "moderate", "high"])
+        ]
+        input_data["Urinary sediment microscopy results"] = binary_map[
+            st.selectbox("Urinary Sediment", ["normal", "abnormal"])
+        ]
+
+    with col9:
+        input_data["Body Mass Index (BMI)"] = st.number_input("BMI")
+        input_data["Urine output (ml/day)"] = st.number_input("Urine Output")
+        input_data["Cholesterol level"] = st.number_input("Cholesterol")
 
     submit = st.form_submit_button("Predict Risk")
 
-# ==================================================
+# --------------------------------------------------
 # PREDICTION PIPELINE
-# ==================================================
+# --------------------------------------------------
 if submit:
-
     df = pd.DataFrame([input_data])
-    df = df[feature_columns]
 
-    df_scaled = scaler.transform(df.values)
+    # Ensure exact feature set & order
+    df = df.reindex(columns=feature_columns, fill_value=0)
+
+    # Scale numeric features (as trained)
+    df_scaled = scaler.transform(df.to_numpy())
 
     with st.spinner("Analyzing patient data..."):
         pred = model.predict(df_scaled)[0]
         label = target_encoder.inverse_transform([pred])[0]
 
-    # ==================================================
-    # DASHBOARD
-    # ==================================================
-    st.subheader("Prediction Outcome")
+    st.subheader("Prediction Result")
+    st.success(f"Predicted Outcome: **{label}**")
 
     if hasattr(model, "predict_proba"):
-        probs = model.predict_proba(df_scaled)[0] * 100
-        top_idx = np.argmax(probs)
-        top_category = target_encoder.classes_[top_idx]
-        top_prob = round(probs[top_idx], 2)
-    else:
-        top_category = label
-        top_prob = 0
-
-    risk_class = (
-        "risk-high"
-        if str(top_category).lower() in ["ckd", "yes", "positive"]
-        else "risk-low"
-    )
-
-    c1, c2, c3 = st.columns(3)
-
-    c1.markdown(
-        f"<div class='card'><div class='card-title'>Clinical Assessment</div>"
-        f"<div class='card-value {risk_class}'>{top_category}</div></div>",
-        unsafe_allow_html=True,
-    )
-
-    c2.markdown(
-        f"<div class='card'><div class='card-title'>Risk Probability</div>"
-        f"<div class='card-value'>{top_prob}%</div></div>",
-        unsafe_allow_html=True,
-    )
-
-    conf_label = "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low"
-
-    c3.markdown(
-        f"<div class='card'><div class='card-title'>Model Confidence</div>"
-        f"<div class='card-value'>{conf_label}</div></div>",
-        unsafe_allow_html=True,
-    )
-
-    # ==================================================
-    # PROBABILITY VISUALIZATION
-    # ==================================================
-    if hasattr(model, "predict_proba"):
-
+        prob = model.predict_proba(df_scaled)[0]
         prob_df = pd.DataFrame({
-            "Risk Category": target_encoder.classes_,
-            "Probability (%)": np.round(probs, 2),
-        }).sort_values("Probability (%)", ascending=False)
+            "Class": target_encoder.classes_,
+            "Probability (%)": np.round(prob * 100, 2)
+        })
 
-        st.subheader("📊 Prediction Probabilities")
+        st.subheader("Prediction Probabilities")
         st.dataframe(prob_df, use_container_width=True)
 
-        st.subheader("📈 Risk Probability Distribution")
-
-        pie_chart = (
-            alt.Chart(prob_df)
-            .mark_arc()
-            .encode(
-                theta="Probability (%):Q",
-                color="Risk Category:N",
-                tooltip=["Risk Category", "Probability (%)"]
-            )
-            .properties(width=400, height=400)
-        )
-
-        bar_chart = (
+        chart = (
             alt.Chart(prob_df)
             .mark_bar()
             .encode(
-                x=alt.X("Risk Category:N", axis=alt.Axis(labelAngle=-30)),
-                y=alt.Y("Probability (%):Q", scale=alt.Scale(domain=[0, 100])),
-                color=alt.Color("Risk Category:N", legend=None),
-                tooltip=["Risk Category", "Probability (%)"]
+                x="Class:N",
+                y="Probability (%):Q",
+                tooltip=["Class", "Probability (%)"]
             )
-            .properties(width=700, height=350)
+            .properties(height=350)
         )
 
-        st.altair_chart(pie_chart, use_container_width=True)
-        st.altair_chart(bar_chart, use_container_width=True)
-
+        st.altair_chart(chart, use_container_width=True)
