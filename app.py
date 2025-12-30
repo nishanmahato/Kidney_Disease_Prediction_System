@@ -20,10 +20,11 @@ st.caption(
 # --------------------------------------------------
 # LOAD SAVED MODELS & OBJECTS
 # --------------------------------------------------
-model = joblib.load("model.pkl")
-scaler = joblib.load("scaler.pkl")
-target_encoder = joblib.load("target_encoder.pkl")
-feature_columns = joblib.load("feature_columns.pkl")
+model = joblib.load(BASE_DIR / "rf_kidney_disease_model.pkl")
+scaler = joblib.load(BASE_DIR / "feature_scaler.pkl")
+target_encoder = joblib.load(BASE_DIR / "target_label_encoder.pkl")
+feature_columns = joblib.load(BASE_DIR / "feature_columns.pkl")
+
 
 # --------------------------------------------------
 # CATEGORICAL MAPPINGS (MATCH TRAINING)
@@ -190,3 +191,4 @@ if submit:
         )
 
         st.altair_chart(bar_chart, use_container_width=True)
+
