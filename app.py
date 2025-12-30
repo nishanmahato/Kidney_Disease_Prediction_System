@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-from pathlib import Path
 import altair as alt
+from pathlib import Path
 
 # --------------------------------------------------
 # PAGE CONFIG
@@ -17,6 +17,12 @@ st.title("🩺 Kidney Disease Prediction System")
 st.caption(
     "A machine-learning–based tool for early assessment of chronic kidney disease risk using clinical and lifestyle data."
 )
+
+# --------------------------------------------------
+# BASE DIRECTORY (MUST COME BEFORE joblib.load)
+# --------------------------------------------------
+BASE_DIR = Path(__file__).parent.resolve()
+
 
 # --------------------------------------------------
 # LOAD SAVED MODELS & OBJECTS
@@ -192,5 +198,6 @@ if submit:
         )
 
         st.altair_chart(bar_chart, use_container_width=True)
+
 
 
