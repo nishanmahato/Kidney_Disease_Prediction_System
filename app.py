@@ -173,6 +173,19 @@ if submit:
         "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low",
     )
 
+    # PREDICTION PROBABILITIES (AFTER DASHBOARD)
+    if hasattr(model, "predict_proba"):
+        prob_df = pd.DataFrame(
+            {
+                "Risk Category": target_encoder.classes_,
+                "Probability (%)": np.round(probs, 2),
+            }
+        ).sort_values("Probability (%)", ascending=False)
+
+        st.subheader("Prediction Probabilities")
+        st.dataframe(prob_df, use_container_width=True)
+
+    
     # VISUALIZATION
     prob_df = pd.DataFrame({
         "Risk Category": target_encoder.classes_,
@@ -209,4 +222,5 @@ if submit:
         st.altair_chart(bar_chart, use_container_width=True)
     with col2:
         st.altair_chart(pie_chart, use_container_width=True)
+
 
