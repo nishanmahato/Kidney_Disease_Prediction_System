@@ -5,9 +5,8 @@ import joblib
 import altair as alt
 from pathlib import Path
 
-# --------------------------------------------------
+
 # PAGE CONFIG
-# --------------------------------------------------
 st.set_page_config(
     page_title="Kidney Disease Prediction System",
     layout="wide"
@@ -18,31 +17,27 @@ st.caption(
     "A machine-learning–based tool for early assessment of chronic kidney disease risk using clinical and lifestyle data."
 )
 
-# --------------------------------------------------
+
 # BASE DIRECTORY
-# --------------------------------------------------
 BASE_DIR = Path(__file__).parent.resolve()
 
-# --------------------------------------------------
+
 # LOAD SAVED MODELS & OBJECTS
-# --------------------------------------------------
 model = joblib.load(BASE_DIR / "rf_kidney_disease_model.pkl")
 scaler = joblib.load(BASE_DIR / "feature_scaler.pkl")
 target_encoder = joblib.load(BASE_DIR / "target_label_encoder.pkl")
 feature_columns = joblib.load(BASE_DIR / "feature_columns.pkl")
 
-# --------------------------------------------------
+
 # CATEGORICAL MAPPINGS
-# --------------------------------------------------
 binary_map = {"yes": 1, "no": 0}
 normal_abnormal_map = {"normal": 0, "abnormal": 1}
 present_map = {"not present": 0, "present": 1}
 appetite_map = {"good": 1, "poor": 0}
 activity_map = {"low": 0, "moderate": 1, "high": 2}
 
-# --------------------------------------------------
+
 # COLUMN TYPES
-# --------------------------------------------------
 CATEGORICAL_COLS = [
     "Red blood cells in urine",
     "Pus cells in urine",
@@ -62,9 +57,8 @@ CATEGORICAL_COLS = [
 
 NUMERIC_COLS = [c for c in feature_columns if c not in CATEGORICAL_COLS]
 
-# --------------------------------------------------
+
 # INPUT FORM
-# --------------------------------------------------
 st.subheader("🧾 Patient Clinical Information")
 
 input_data = {}
@@ -106,9 +100,8 @@ with st.form("patient_form"):
 
     submit = st.form_submit_button("🔍 Predict Risk")
 
-# --------------------------------------------------
+
 # PREDICTION & RESULTS
-# --------------------------------------------------
 if submit:
     df = pd.DataFrame([input_data]).reindex(columns=feature_columns)
 
@@ -165,12 +158,12 @@ if submit:
         else "Low Risk"
     )
 
-    st.subheader("📊 Prediction Outcome")
+    st.subheader("Prediction Outcome")
 
     if risk_class == "High Risk":
-        st.error("⚠️ High Risk of Chronic Kidney Disease detected")
+        st.error("High Risk of Chronic Kidney Disease detected")
     else:
-        st.success("✅ Low Risk of Chronic Kidney Disease detected")
+        st.success("Low Risk of Chronic Kidney Disease detected")
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Clinical Assessment", top_category)
@@ -180,15 +173,13 @@ if submit:
         "High" if top_prob >= 80 else "Moderate" if top_prob >= 60 else "Low",
     )
 
-    # --------------------------------------------------
     # VISUALIZATION
-    # --------------------------------------------------
     prob_df = pd.DataFrame({
         "Risk Category": target_encoder.classes_,
         "Probability (%)": np.round(probs, 2),
     }).sort_values("Probability (%)", ascending=False)
 
-    st.subheader("📈 Risk Probability Distribution")
+    st.subheader("Risk Probability Distribution")
 
     bar_chart = (
         alt.Chart(prob_df)
@@ -218,3 +209,4 @@ if submit:
         st.altair_chart(bar_chart, use_container_width=True)
     with col2:
         st.altair_chart(pie_chart, use_container_width=True)
+
